@@ -1,36 +1,58 @@
-# Run this app with `python app.py` and
-# visit http://127.0.0.1:8050/ in your web browser.
-
-
-from dash import Dash, html, dcc
-import plotly.express as px
 import pandas as pd
 
-app = Dash(__name__)
 
-# assume you have a "long-form" data frame
-# see https://plotly.com/python/px-arguments/ for more options
-df = pd.DataFrame(
-    {
-        "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-        "Amount": [4, 1, 2, 2, 4, 5],
-        "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"],
-    }
+daily_df = pd.read_csv("data/daily_report.csv")
+
+totals_df = (
+    daily_df[["Confirmed", "Deaths", "Recovered"]].sum().reset_index(name="count")
 )
+totals_df = totals_df.rename(columns={"index": "condition"})
 
-fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
+countries_df = daily_df[["Country_Region", "Confirmed", "Deaths", "Recovered"]]
+countries_df = countries_df.groupby("Country_Region").sum().reset_index()
 
-app.layout = html.Div(
-    children=[
-        html.H1(children="Hello Dash"),
-        html.Div(
-            children="""
-        Dash: A web application framework for your data.
-    """
-        ),
-        dcc.Graph(id="example-graph", figure=fig),
-    ]
-)
+conditions = ["confirmed", "deaths", "recovered"]
 
-if __name__ == "__main__":
-    app.run(debug=True)
+
+def make_country_df(country):
+    def make_df(condition, country):
+        df = pd.read_csv(f"data/time_{condition}.csv")
+        df = df.loc[df["Country/Region"] == country]
+        df = (
+            df.drop(columns=["Province/State", "Country/Region", "Lat", "Long"])
+            .sum()
+            .reset_index(name=condition)
+        )
+        df = df.rename(columns={"index": "date"})
+        return df
+
+    final_df = None
+    conditions = ["confirmed", "deaths", "recovered"]
+    for condition in conditions:
+        condition_df = make_df(condition, "Afghanistan")
+        if final_df is None:
+            final_df = condition_df
+        else:
+            final_df = final_df.merge(condition_df)
+    return final_df
+
+
+def make_global_df():
+    def make_df(condition):
+        df = pd.read_csv(f"data/time_{condition}.csv")
+        df = (
+            df.drop(["Province/State", "Country/Region", "Lat", "Long"], axis=1)
+            .sum()
+            .reset_index(name=condition)
+        )
+        df = df.rename(columns={"index": "date"})
+        return df
+
+    final_df = None
+    for condition in conditions:
+        condition_df = make_df(condition)
+        if final_df is None:
+            final_df = condition_df
+        else:
+            final_df = final_df.merge(condition_df)
+    return final_df
