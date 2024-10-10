@@ -1,6 +1,5 @@
 from dash import Dash, html, dcc, Input, Output
 import plotly.express as px
-import pandas as pd
 from data import (
     countries_df,
     totals_df,
@@ -16,6 +15,8 @@ stylesheets = [
 ]
 
 app = Dash(__name__, external_stylesheets=stylesheets)
+
+server = app.server
 
 bubble_map = px.scatter_geo(
     countries_df,
