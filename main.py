@@ -1,7 +1,13 @@
-from dash import Dash, html, dcc
+from dash import Dash, html, dcc, Input, Output
 import plotly.express as px
 import pandas as pd
-from data import countries_df, totals_df
+from data import (
+    countries_df,
+    totals_df,
+    dropdown_options,
+    make_global_df,
+    make_country_df,
+)
 from builders import make_table
 
 stylesheets = [
@@ -91,10 +97,55 @@ app.layout = html.Div(
                         ),
                     ],
                 ),
+                html.Div(
+                    style={"grid-column": "span 3", "gap": 50},
+                    children=[
+                        dcc.Dropdown(
+                            style={
+                                "width": 320,
+                                "margin": "0 auto",
+                                "color": "#111111",
+                            },
+                            id="country",
+                            options=[
+                                {"label": country, "value": country}
+                                for country in dropdown_options
+                            ],
+                        ),
+                        dcc.Graph(id="country_graph"),
+                    ],
+                ),
             ],
         ),
     ],
 )
+
+
+@app.callback(Output("country_graph", "figure"), [Input("country", "value")])
+def update_hello(value):
+    if value:
+        df = make_country_df(value)
+    else:
+        df = make_global_df()
+
+    fig = px.line(
+        df,
+        template="plotly_dark",
+        x="date",
+        y=["confirmed", "deaths", "recovered"],
+        title="Global Conditions",
+        labels={"value": "Cases", "variable": "Condition", "date": "Date"},
+        hover_data={
+            "variable": False,
+        },
+    )
+    fig.update_xaxes(
+        rangeslider_visible=True,
+    )
+    fig["data"][0]["line"]["color"] = "#e74c3c"
+    fig["data"][1]["line"]["color"] = "#9b59b6"
+    fig["data"][2]["line"]["color"] = "#27ae60"
+    return fig
 
 
 if __name__ == "__main__":

@@ -16,6 +16,10 @@ countries_df = (
     .reset_index()
 )
 
+dropdown_options = countries_df.sort_values(by="Country_Region").reset_index()[
+    "Country_Region"
+]
+
 conditions = ["confirmed", "deaths", "recovered"]
 
 
@@ -34,7 +38,7 @@ def make_country_df(country):
     final_df = None
     conditions = ["confirmed", "deaths", "recovered"]
     for condition in conditions:
-        condition_df = make_df(condition, "Afghanistan")
+        condition_df = make_df(condition, country)
         if final_df is None:
             final_df = condition_df
         else:
